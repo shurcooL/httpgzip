@@ -14,23 +14,26 @@ import (
 
 // FileServer returns a handler that serves HTTP requests
 // with the contents of the file system rooted at root.
-func FileServer(root http.FileSystem, opt Options) http.Handler {
+// Additional optional behaviors can be controlled via opt.
+func FileServer(root http.FileSystem, opt FileServerOptions) http.Handler {
 	if opt.ServeError == nil {
 		opt.ServeError = defaults.ServeError
 	}
 	return &fileServer{root: root, opt: opt}
 }
 
-var defaults = Options{
+var defaults = FileServerOptions{
 	ServeError: NonSpecific,
 }
 
-// Options for FileServer.
-type Options struct {
+// FileServerOptions specifies options for FileServer.
+type FileServerOptions struct {
 	// IndexHTML controls special handling of "index.html" file.
 	IndexHTML bool
 
 	// ServeError is used to serve errors coming from underlying file system.
+	// If called, it's guaranteed to be before anything has been written
+	// to w by FileServer, so it's safe to use http.Error.
 	// If nil, then NonSpecific is used.
 	ServeError func(w http.ResponseWriter, req *http.Request, err error)
 }
@@ -50,8 +53,10 @@ func NonSpecific(w http.ResponseWriter, req *http.Request, err error) {
 	}
 }
 
-// Detailed serves detailed HTTP error message and status code
-// for a given non-nil error value.
+// Detailed serves detailed HTTP error message and status code for a given
+// non-nil error value. Because err.Error() is displayed to users, it should
+// be used in development only, or if you're confident there won't be sensitive
+// information in the underlying file system error messages.
 func Detailed(w http.ResponseWriter, req *http.Request, err error) {
 	switch {
 	case os.IsNotExist(err):
@@ -65,7 +70,7 @@ func Detailed(w http.ResponseWriter, req *http.Request, err error) {
 
 type fileServer struct {
 	root http.FileSystem
-	opt  Options
+	opt  FileServerOptions
 }
 
 func (fs *fileServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {

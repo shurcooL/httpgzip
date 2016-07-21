@@ -9,7 +9,7 @@ import (
 func ExampleFileServer() {
 	http.Handle("/assets/", http.StripPrefix("/assets", httpgzip.FileServer(
 		http.Dir("assets"),
-		httpgzip.Options{
+		httpgzip.FileServerOptions{
 			IndexHTML: true,
 		},
 	)))
