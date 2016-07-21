@@ -38,35 +38,37 @@ type FileServerOptions struct {
 	ServeError func(w http.ResponseWriter, req *http.Request, err error)
 }
 
-// NonSpecific serves a non-specific HTTP error message and status code
-// for a given non-nil error value. It's important that NonSpecific does not
-// actually include err.Error(), since its goal is to not leak information
-// in error messages to users.
-func NonSpecific(w http.ResponseWriter, req *http.Request, err error) {
-	switch {
-	case os.IsNotExist(err):
-		http.Error(w, "404 Page Not Found", http.StatusNotFound)
-	case os.IsPermission(err):
-		http.Error(w, "403 Forbidden", http.StatusForbidden)
-	default:
-		http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+var (
+	// NonSpecific serves a non-specific HTTP error message and status code
+	// for a given non-nil error value. It's important that NonSpecific does not
+	// actually include err.Error(), since its goal is to not leak information
+	// in error messages to users.
+	NonSpecific = func(w http.ResponseWriter, req *http.Request, err error) {
+		switch {
+		case os.IsNotExist(err):
+			http.Error(w, "404 Page Not Found", http.StatusNotFound)
+		case os.IsPermission(err):
+			http.Error(w, "403 Forbidden", http.StatusForbidden)
+		default:
+			http.Error(w, "500 Internal Server Error", http.StatusInternalServerError)
+		}
 	}
-}
 
-// Detailed serves detailed HTTP error message and status code for a given
-// non-nil error value. Because err.Error() is displayed to users, it should
-// be used in development only, or if you're confident there won't be sensitive
-// information in the underlying file system error messages.
-func Detailed(w http.ResponseWriter, req *http.Request, err error) {
-	switch {
-	case os.IsNotExist(err):
-		http.Error(w, fmt.Sprintf("404 Page Not Found\n\n%v", err), http.StatusNotFound)
-	case os.IsPermission(err):
-		http.Error(w, fmt.Sprintf("403 Forbidden\n\n%v", err), http.StatusForbidden)
-	default:
-		http.Error(w, fmt.Sprintf("500 Internal Server Error\n\n%v", err), http.StatusInternalServerError)
+	// Detailed serves detailed HTTP error message and status code for a given
+	// non-nil error value. Because err.Error() is displayed to users, it should
+	// be used in development only, or if you're confident there won't be sensitive
+	// information in the underlying file system error messages.
+	Detailed = func(w http.ResponseWriter, req *http.Request, err error) {
+		switch {
+		case os.IsNotExist(err):
+			http.Error(w, fmt.Sprintf("404 Page Not Found\n\n%v", err), http.StatusNotFound)
+		case os.IsPermission(err):
+			http.Error(w, fmt.Sprintf("403 Forbidden\n\n%v", err), http.StatusForbidden)
+		default:
+			http.Error(w, fmt.Sprintf("500 Internal Server Error\n\n%v", err), http.StatusInternalServerError)
+		}
 	}
-}
+)
 
 type fileServer struct {
 	root http.FileSystem
