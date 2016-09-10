@@ -5,7 +5,9 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"golang.org/x/net/lex/httplex"
@@ -41,6 +43,28 @@ func ServeContent(w http.ResponseWriter, req *http.Request, name string, modTime
 	if _, ok := content.(NotWorthGzipCompressing); ok {
 		http.ServeContent(w, req, name, modTime, content)
 		return
+	}
+
+	// The following cases involve compression, so we want to detect the Content-Type eagerly,
+	// before passing it off to http.ServeContent. It's because http.ServeContent won't be able
+	// to easily detect the original content type after content has been gzip compressed.
+	// We do this even for the last case that serves uncompressed data so that it doesn't
+	// have to do duplicate work.
+	_, haveType := w.Header()["Content-Type"]
+	if !haveType {
+		ctype := mime.TypeByExtension(filepath.Ext(name))
+		if ctype == "" {
+			// Read a chunk to decide between utf-8 text and binary.
+			var buf [512]byte
+			n, _ := io.ReadFull(content, buf[:])
+			ctype = http.DetectContentType(buf[:n])
+			_, err := content.Seek(0, io.SeekStart) // Rewind to output whole file.
+			if err != nil {
+				http.Error(w, "seeker can't seek", http.StatusInternalServerError)
+				return
+			}
+		}
+		w.Header().Set("Content-Type", ctype)
 	}
 
 	// If there are gzip encoded bytes available, use them directly.
