@@ -46,7 +46,7 @@ var (
 	NonSpecific = func(w http.ResponseWriter, req *http.Request, err error) {
 		switch {
 		case os.IsNotExist(err):
-			http.Error(w, "404 Page Not Found", http.StatusNotFound)
+			http.Error(w, "404 Not Found", http.StatusNotFound)
 		case os.IsPermission(err):
 			http.Error(w, "403 Forbidden", http.StatusForbidden)
 		default:
@@ -61,7 +61,7 @@ var (
 	Detailed = func(w http.ResponseWriter, req *http.Request, err error) {
 		switch {
 		case os.IsNotExist(err):
-			http.Error(w, fmt.Sprintf("404 Page Not Found\n\n%v", err), http.StatusNotFound)
+			http.Error(w, fmt.Sprintf("404 Not Found\n\n%v", err), http.StatusNotFound)
 		case os.IsPermission(err):
 			http.Error(w, fmt.Sprintf("403 Forbidden\n\n%v", err), http.StatusForbidden)
 		default:
