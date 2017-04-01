@@ -110,7 +110,7 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	// Redirect to canonical path: / at end of directory url.
 	url := req.URL.Path
 	if fi.IsDir() {
-		if !strings.HasSuffix(url, "/") {
+		if !strings.HasSuffix(url, "/") && url != "" {
 			localRedirect(w, req, pathpkg.Base(url)+"/")
 			return
 		}
