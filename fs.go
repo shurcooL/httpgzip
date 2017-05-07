@@ -61,11 +61,11 @@ var (
 	Detailed = func(w http.ResponseWriter, req *http.Request, err error) {
 		switch {
 		case os.IsNotExist(err):
-			http.Error(w, fmt.Sprintf("404 Not Found\n\n%v", err), http.StatusNotFound)
+			http.Error(w, "404 Not Found\n\n"+err.Error(), http.StatusNotFound)
 		case os.IsPermission(err):
-			http.Error(w, fmt.Sprintf("403 Forbidden\n\n%v", err), http.StatusForbidden)
+			http.Error(w, "403 Forbidden\n\n"+err.Error(), http.StatusForbidden)
 		default:
-			http.Error(w, fmt.Sprintf("500 Internal Server Error\n\n%v", err), http.StatusInternalServerError)
+			http.Error(w, "500 Internal Server Error\n\n"+err.Error(), http.StatusInternalServerError)
 		}
 	}
 )
@@ -78,7 +78,7 @@ type fileServer struct {
 func (fs *fileServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if req.Method != "GET" {
 		w.Header().Set("Allow", "GET")
-		http.Error(w, "method should be GET", http.StatusMethodNotAllowed)
+		http.Error(w, "405 Method Not Allowed\n\nmethod should be GET", http.StatusMethodNotAllowed)
 		return
 	}
 
