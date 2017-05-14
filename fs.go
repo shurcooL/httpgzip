@@ -161,7 +161,7 @@ func dirList(w http.ResponseWriter, f http.File, root bool) error {
 	sort.Sort(byName(dirs))
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, "<pre>\n")
+	fmt.Fprintln(w, "<pre>")
 	switch root {
 	case true:
 		fmt.Fprintln(w, `<a href=".">.</a>`)
@@ -179,7 +179,7 @@ func dirList(w http.ResponseWriter, f http.File, root bool) error {
 		url := url.URL{Path: name}
 		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", url.String(), html.EscapeString(name))
 	}
-	fmt.Fprintf(w, "</pre>\n")
+	fmt.Fprintln(w, "</pre>")
 	return nil
 }
 
