@@ -33,7 +33,7 @@ type NotWorthGzipCompressing interface {
 // to improve performance when the provided content implements them. Otherwise,
 // it applies gzip compression on the fly, if it's found to be beneficial.
 func ServeContent(w http.ResponseWriter, req *http.Request, name string, modTime time.Time, content io.ReadSeeker) {
-	// If client doesn't accept gzip encoding, serve without compression.
+	// If request doesn't accept gzip encoding, serve without compression.
 	if !httpguts.HeaderValuesContainsToken(req.Header["Accept-Encoding"], "gzip") {
 		http.ServeContent(w, req, name, modTime, content)
 		return
@@ -41,6 +41,7 @@ func ServeContent(w http.ResponseWriter, req *http.Request, name string, modTime
 
 	// If the file is not worth gzip compressing, serve it as is.
 	if _, ok := content.(NotWorthGzipCompressing); ok {
+		w.Header()["Content-Encoding"] = nil
 		http.ServeContent(w, req, name, modTime, content)
 		return
 	}
@@ -82,6 +83,7 @@ func ServeContent(w http.ResponseWriter, req *http.Request, name string, modTime
 	}
 
 	// Serve as is.
+	w.Header()["Content-Encoding"] = nil
 	http.ServeContent(w, req, name, modTime, content)
 }
 
