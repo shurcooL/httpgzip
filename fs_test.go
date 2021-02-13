@@ -26,7 +26,9 @@ func TestFileServer_noDirListing(t *testing.T) {
 	fs := httpfs.New(mapfs.New(map[string]string{
 		"foo.txt": "Hello world",
 	}))
-	ts := httptest.NewServer(http.StripPrefix("/bar/", httpgzip.FileServer(fs, httpgzip.FileServerOptions{})))
+	ts := httptest.NewServer(http.StripPrefix("/bar/", httpgzip.FileServer(fs, httpgzip.FileServerOptions{
+		DisableDirListing: true,
+	})))
 	defer ts.Close()
 	res, err := http.Get(ts.URL + "/bar/")
 	if err != nil {
@@ -53,7 +55,7 @@ func TestFileServerImplicitLeadingSlash(t *testing.T) {
 	fs := httpfs.New(mapfs.New(map[string]string{
 		"foo.txt": "Hello world",
 	}))
-	ts := httptest.NewServer(http.StripPrefix("/bar/", httpgzip.FileServer(fs, httpgzip.FileServerOptions{DirListing: true})))
+	ts := httptest.NewServer(http.StripPrefix("/bar/", httpgzip.FileServer(fs, httpgzip.FileServerOptions{})))
 	defer ts.Close()
 	get := func(suffix string) string {
 		res, err := http.Get(ts.URL + suffix)
