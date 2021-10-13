@@ -33,7 +33,7 @@ type NotWorthGzipCompressing interface {
 // It's aware of GzipByter and NotWorthGzipCompressing interfaces, and uses them
 // to improve performance when the provided content implements them. Otherwise,
 // it applies gzip compression on the fly, if it's found to be beneficial.
-func ServeContent(w http.ResponseWriter, req *http.Request, name string, modTime time.Time, content io.ReadSeeker) {
+func ServeContent(fs *fileServer, w http.ResponseWriter, req *http.Request, name string, modTime time.Time, fpath string, content io.ReadSeeker) {
 	// If compression has already been dealt with, serve as is.
 	if _, ok := w.Header()["Content-Encoding"]; ok {
 		http.ServeContent(w, req, name, modTime, content)
@@ -44,6 +44,17 @@ func ServeContent(w http.ResponseWriter, req *http.Request, name string, modTime
 	if !httpguts.HeaderValuesContainsToken(req.Header["Accept-Encoding"], "gzip") {
 		http.ServeContent(w, req, name, modTime, content)
 		return
+	}
+
+	// If request accepts Brotli, we look for a precompressed variant of this file.
+	// We do not attempt to dynamically compress Brotli as it is not performant.
+	// Example: If `index.js` is requested and `index.js.br` is found, we serve the compressed version.
+	if httpguts.HeaderValuesContainsToken(req.Header["Accept-Encoding"], "br") {
+		brotliFile := fs.findBrotliFile(w, req, fpath)
+		if brotliFile != nil {
+			http.ServeContent(w, req, name, modTime, brotliFile)
+			return
+		}
 	}
 
 	// If the file is not worth gzip compressing, serve it as is.

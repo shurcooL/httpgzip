@@ -157,7 +157,7 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ServeContent(w, req, fi.Name(), fi.ModTime(), f)
+	ServeContent(fs, w, req, fi.Name(), fi.ModTime(), path, f)
 }
 
 func dirList(w http.ResponseWriter, f http.File, root bool) error {
