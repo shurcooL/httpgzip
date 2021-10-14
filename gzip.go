@@ -40,12 +40,13 @@ func ServeContent(fs *fileServer, w http.ResponseWriter, req *http.Request, name
 		return
 	}
 
-	// If request accepts Brotli, we look for a precompressed variant of this file.
+	// If request accepts Brotli, look for a precompressed variant of this file.
 	// We do not attempt to dynamically compress Brotli as it is not performant.
-	// Example: If `index.js` is requested and `index.js.br` is found, we serve the compressed version.
 	if httpguts.HeaderValuesContainsToken(req.Header["Accept-Encoding"], "br") {
-		brotliFile := fs.findBrotliFile(fpath)
+		brotliFile := fs.maybeFindBrotliFile(fpath)
 		if brotliFile != nil {
+			defer brotliFile.Close()
+
 			wHeader := w.Header()
 			wHeader.Set("Content-Encoding", "br")
 			wHeader.Add("Vary", req.Header.Get("Accept-Encoding"))
@@ -55,8 +56,22 @@ func ServeContent(fs *fileServer, w http.ResponseWriter, req *http.Request, name
 		}
 	}
 
-	// If request doesn't accept gzip encoding, serve without compression.
-	if !httpguts.HeaderValuesContainsToken(req.Header["Accept-Encoding"], "gzip") {
+	// If request accepts Gzip, look for a precompressed variant of this file.
+	if httpguts.HeaderValuesContainsToken(req.Header["Accept-Encoding"], "gzip") {
+		gzipFile := fs.maybeFindGzipFile(fpath)
+		if gzipFile != nil {
+			defer gzipFile.Close()
+
+			wHeader := w.Header()
+			wHeader.Set("Content-Encoding", "gzip")
+			wHeader.Add("Vary", req.Header.Get("Accept-Encoding"))
+
+			http.ServeContent(w, req, name, modTime, gzipFile)
+			return
+		}
+	} else {
+		// Request doesn't accept gzip encoding.
+		// No point continuing to try to compress this file, serve without compression.
 		http.ServeContent(w, req, name, modTime, content)
 		return
 	}
