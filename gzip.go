@@ -33,15 +33,45 @@ type NotWorthGzipCompressing interface {
 // It's aware of GzipByter and NotWorthGzipCompressing interfaces, and uses them
 // to improve performance when the provided content implements them. Otherwise,
 // it applies gzip compression on the fly, if it's found to be beneficial.
-func ServeContent(w http.ResponseWriter, req *http.Request, name string, modTime time.Time, content io.ReadSeeker) {
+func ServeContent(fs *fileServer, w http.ResponseWriter, req *http.Request, name string, modTime time.Time, fpath string, content io.ReadSeeker) {
 	// If compression has already been dealt with, serve as is.
 	if _, ok := w.Header()["Content-Encoding"]; ok {
 		http.ServeContent(w, req, name, modTime, content)
 		return
 	}
 
-	// If request doesn't accept gzip encoding, serve without compression.
-	if !httpguts.HeaderValuesContainsToken(req.Header["Accept-Encoding"], "gzip") {
+	// If request accepts Brotli, look for a precompressed variant of this file.
+	// We do not attempt to dynamically compress Brotli as it is not performant.
+	if httpguts.HeaderValuesContainsToken(req.Header["Accept-Encoding"], "br") {
+		brotliFile := fs.maybeFindBrotliFile(fpath)
+		if brotliFile != nil {
+			defer brotliFile.Close()
+
+			wHeader := w.Header()
+			wHeader.Set("Content-Encoding", "br")
+			wHeader.Add("Vary", req.Header.Get("Accept-Encoding"))
+
+			http.ServeContent(w, req, name, modTime, brotliFile)
+			return
+		}
+	}
+
+	// If request accepts Gzip, look for a precompressed variant of this file.
+	if httpguts.HeaderValuesContainsToken(req.Header["Accept-Encoding"], "gzip") {
+		gzipFile := fs.maybeFindGzipFile(fpath)
+		if gzipFile != nil {
+			defer gzipFile.Close()
+
+			wHeader := w.Header()
+			wHeader.Set("Content-Encoding", "gzip")
+			wHeader.Add("Vary", req.Header.Get("Accept-Encoding"))
+
+			http.ServeContent(w, req, name, modTime, gzipFile)
+			return
+		}
+	} else {
+		// Request doesn't accept gzip encoding.
+		// No point continuing to try to compress this file, serve without compression.
 		http.ServeContent(w, req, name, modTime, content)
 		return
 	}
