@@ -1,7 +1,7 @@
 httpgzip
 ========
 
-[![Build Status](https://travis-ci.org/shurcooL/httpgzip.svg?branch=master)](https://travis-ci.org/shurcooL/httpgzip) [![GoDoc](https://godoc.org/github.com/shurcooL/httpgzip?status.svg)](https://godoc.org/github.com/shurcooL/httpgzip)
+[![Go Reference](https://pkg.go.dev/badge/github.com/shurcooL/httpgzip.svg)](https://pkg.go.dev/github.com/shurcooL/httpgzip)
 
 Package httpgzip provides net/http-like primitives
 that use gzip compression when serving HTTP requests.
@@ -9,8 +9,8 @@ that use gzip compression when serving HTTP requests.
 Installation
 ------------
 
-```bash
-go get -u github.com/shurcooL/httpgzip
+```sh
+go get github.com/shurcooL/httpgzip
 ```
 
 License
