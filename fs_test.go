@@ -1,7 +1,7 @@
 package httpgzip_test
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -37,7 +37,7 @@ func TestFileServerImplicitLeadingSlash(t *testing.T) {
 			t.Fatalf("Get %s: %v", suffix, err)
 		}
 		defer res.Body.Close()
-		b, err := ioutil.ReadAll(res.Body)
+		b, err := io.ReadAll(res.Body)
 		if err != nil {
 			t.Fatalf("ReadAll %s: %v", suffix, err)
 		}
