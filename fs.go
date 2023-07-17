@@ -28,6 +28,9 @@ var defaults = FileServerOptions{
 
 // FileServerOptions specifies options for FileServer.
 type FileServerOptions struct {
+	// DisableDirListing controls whether a directory listing is shown for directories.
+	DisableDirListing bool
+
 	// IndexHTML controls special handling of "index.html" file.
 	IndexHTML bool
 
@@ -143,6 +146,10 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		if checkLastModified(w, req, fi.ModTime()) {
 			return
 		}
+		if fs.opt.DisableDirListing {
+			http.Error(w, "403 Forbidden", http.StatusForbidden)
+			return
+		}
 		err := dirList(w, f, path == "/")
 		if err != nil {
 			fs.opt.ServeError(w, req, err)
@@ -150,7 +157,7 @@ func (fs *fileServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	ServeContent(w, req, fi.Name(), fi.ModTime(), f)
+	ServeContent(fs, w, req, fi.Name(), fi.ModTime(), path, f)
 }
 
 func dirList(w http.ResponseWriter, f http.File, root bool) error {

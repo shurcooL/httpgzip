@@ -21,6 +21,32 @@ func ExampleFileServer() {
 	)))
 }
 
+// Test that no dir listing is shown if the DirListing option is false.
+func TestFileServer_noDirListing(t *testing.T) {
+	fs := httpfs.New(mapfs.New(map[string]string{
+		"foo.txt": "Hello world",
+	}))
+	ts := httptest.NewServer(http.StripPrefix("/bar/", httpgzip.FileServer(fs, httpgzip.FileServerOptions{
+		DisableDirListing: true,
+	})))
+	defer ts.Close()
+	res, err := http.Get(ts.URL + "/bar/")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	defer res.Body.Close()
+	if want := http.StatusForbidden; res.StatusCode != want {
+		t.Fatalf("got status %d, want %d", res.StatusCode, want)
+	}
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		t.Fatalf("ReadAll: %v", err)
+	}
+	if want := "403 Forbidden\n"; string(b) != want {
+		t.Fatalf("got body %q, want %q", b, want)
+	}
+}
+
 // Test that there are no infinite redirects at root path even if the entire
 // req.URL.Path is stripped, e.g., via an overly aggressive http.StripPrefix.
 // See https://github.com/shurcooL/httpgzip/pull/3
